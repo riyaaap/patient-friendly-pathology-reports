@@ -1,1 +1,57 @@
 # .gitignore
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+*.egg
+.Python
+build/
+dist/
+
+# --- Environments ---
+.venv/
+venv/
+env/
+.conda/
+*.conda
+
+# --- Data (raw + processed pathology report data) ---
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# --- Model weights / checkpoints / adapters (too large, reproducible from code + config) ---
+models/*
+!models/.gitkeep
+*.bin
+*.safetensors
+*.pt
+*.ckpt
+
+# --- Hugging Face cache (if it ever lands inside the repo dir) ---
+.cache/
+huggingface_cache/
+
+# --- Logs / eval outputs / histograms ---
+logs/*
+!logs/.gitkeep
+*.log
+data/processed/*.png
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# --- OS / editor cruft ---
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# --- Secrets / tokens (just in case anything gets dropped locally) ---
+*.env
+.env
+huggingface_token.txt 
