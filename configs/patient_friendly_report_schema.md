@@ -1,7 +1,7 @@
 Patient-Friendly Pathology Report — Output Schema
 -> to define criteria for successful outputs of the model 
 
-This schema defines the reuired structure, tone, and content rules for model output. 
+This schema defines the required structure, tone, and content rules for model output. 
 , to use as: 1) a generation prompt template for teacher-LLM silver labels, 
 2) fine-tuning target format, and 
 3) LLM-as-a-judge scoring rubric. 
