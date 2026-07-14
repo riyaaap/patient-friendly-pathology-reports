@@ -4,6 +4,7 @@ generate_teacher_labels.py
 Generates patient-friendly "silver label" pathology report rewrites using a
 locally-hosted teacher LLM (via vLLM's OpenAI-compatible chat completions API).
 Teacher LLM model used is Qwen2.5-14B
+<<<<<<< HEAD
 """
 
 """
@@ -25,6 +26,8 @@ for entry in lines:
 "
 
 ... where 'E8-A82B' can be replaced with the specific TCGA report ID wanted to be viewed
+=======
+>>>>>>> aaa29e8cc5fdac1e601ba97f8e2e9fa7b2f8b0f6
 """
 
 import argparse
