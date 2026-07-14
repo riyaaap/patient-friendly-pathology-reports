@@ -3,7 +3,7 @@ generate_teacher_labels.py
 
 Generates patient-friendly "silver label" pathology report rewrites using a
 locally-hosted teacher LLM (via vLLM's OpenAI-compatible chat completions API).
-Teacher LLM model used is Qwen2.5-8B
+Teacher LLM model used is Qwen2.5-14B
 """
 
 import argparse
