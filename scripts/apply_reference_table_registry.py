@@ -54,25 +54,46 @@ def find_markdown_tables(text: str):
     return [(m.start(), m.end(), m.group()) for m in pattern.finditer(text)]
 
 
+def get_table_header(table_text: str) -> str:
+    first_line = table_text.strip().split(chr(10))[0]
+    return first_line.lower()
+
+
 def replace_or_insert_table(silver_text: str, canonical_table_md: str,
-                             explanation: str, heading_hint: str):
+                             explanation: str, heading_hint: str,
+                             header_signature: list):
     """
-    If a table already exists near the relevant subsection, replace it.
-    Otherwise, this is flagged for manual placement rather than guessing
-    where to insert (safer default).
+    Identify the correct table to replace by matching column header
+    signatures (e.g. "Grade Group" only appears in the Gleason reference
+    table, never in the Section 1 diagnosis table). This avoids the failure
+    mode where keyword-proximity or table-count heuristics get confused by
+    unrelated tables that happen to mention the same term in passing.
     """
     tables = find_markdown_tables(silver_text)
     if not tables:
         return silver_text, "NO_TABLE_FOUND_FLAG_FOR_MANUAL_INSERT"
 
-    # Heuristic: replace the LAST table in the document (in this schema,
-    # the scoring-system table is typically the only/last table generated
-    # in Section 3). Flag for manual review if multiple tables exist,
-    # since blind replacement of the wrong one is worse than not replacing.
-    if len(tables) > 1:
-        return silver_text, "MULTIPLE_TABLES_FOUND_MANUAL_REVIEW_NEEDED"
+    if not header_signature:
+        # No signature defined for this system yet -- fall back to the
+        # old conservative behavior rather than guessing blindly.
+        if len(tables) == 1:
+            start, end, _ = tables[0]
+            new_text = silver_text[:start] + canonical_table_md + silver_text[end:]
+            return new_text, "REPLACED_OK_NO_SIGNATURE_SINGLE_TABLE"
+        return silver_text, "MULTIPLE_TABLES_NO_SIGNATURE_MANUAL_REVIEW_NEEDED"
 
-    start, end, _ = tables[0]
+    matches = []
+    for start, end, table_text in tables:
+        header = get_table_header(table_text)
+        if any(sig.lower() in header for sig in header_signature):
+            matches.append((start, end))
+
+    if len(matches) == 0:
+        return silver_text, "NO_MATCHING_HEADER_FOUND_FLAG_FOR_MANUAL_INSERT"
+    if len(matches) > 1:
+        return silver_text, "MULTIPLE_MATCHING_HEADERS_MANUAL_REVIEW_NEEDED"
+
+    start, end = matches[0]
     new_text = silver_text[:start] + canonical_table_md + silver_text[end:]
     return new_text, "REPLACED_OK"
 
@@ -122,7 +143,8 @@ def process(input_jsonl, output_jsonl, registry_dir, report_csv):
                         if cond_patterns and detect_matches(raw_text, cond_patterns):
                             silver_text, status = replace_or_insert_table(
                                 silver_text, cond["table_markdown"],
-                                entry["explanation_text"], entry["system_name"]
+                                entry["explanation_text"], entry["system_name"],
+                                entry.get("table_header_signature", [])
                             )
                             action_log.append(f"{entry['system_name']} (NET-conditional): {status}")
                         else:
@@ -131,7 +153,8 @@ def process(input_jsonl, output_jsonl, registry_dir, report_csv):
 
                     silver_text, status = replace_or_insert_table(
                         silver_text, entry["table_markdown"],
-                        entry["explanation_text"], entry["system_name"]
+                        entry["explanation_text"], entry["system_name"],
+                        entry.get("table_header_signature", [])
                     )
                     action_log.append(f"{entry['system_name']}: {status}")
 
