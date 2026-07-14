@@ -1,0 +1,30 @@
+system_name: "Breslow Thickness"
+cancer_type: "Cutaneous melanoma"
+detection_patterns:
+  - "\\bbreslow\\b"
+legacy_names: []
+table_columns_used: ["Breslow Thickness", "Category"]
+table_markdown: |
+  | Breslow Thickness | Category |
+  |---|---|
+  | ≤0.8 mm | T1 |
+  | 0.8-1.0 mm | T1 |
+  | 1.01-2.0 mm | T2 |
+  | 2.01-4.0 mm | T3 |
+  | >4.0 mm | T4 |
+explanation_text: |
+  Breslow thickness measures how deep the melanoma has grown into the skin,
+  in millimeters. In general, thinner melanomas (measured in fractions of a
+  millimeter) tend to have a better prognosis than thicker ones, and this
+  measurement is a key part of determining the overall stage of the cancer.
+notes: |
+  This is a threshold lookup on a single continuous measurement (not a
+  combination-based score like Gleason/Fuhrman). Always use the specific
+  thickness value stated in the source report to pick the row; do not
+  round or estimate a value not explicitly present in the source.
+source_citation: >
+  Breslow A. "Thickness, cross-sectional areas and depth of invasion in the
+  prognosis of cutaneous melanoma." Ann Surg. 1970;172(5):902-8. Thresholds
+  per AJCC 8th edition: Gershenwald JE et al. "Melanoma staging: Evidence-
+  based changes in the American Joint Committee on Cancer eighth edition
+  cancer staging manual." CA Cancer J Clin. 2017;67(6):472-92.

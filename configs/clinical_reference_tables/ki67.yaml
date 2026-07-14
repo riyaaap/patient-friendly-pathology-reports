@@ -1,0 +1,37 @@
+system_name: "Ki-67 Proliferation Index"
+cancer_type: "General (breast, neuroendocrine tumors, others)"
+detection_patterns:
+  - "\\bki[\\s-]?67\\b"
+legacy_names: []
+is_lightweight: true
+table_columns_used: []   # no general table — see conditional_table below
+explanation_text: |
+  Ki-67 is not a stage or grade on its own — it is a marker that shows what
+  percentage of tumor cells are actively dividing. It is reported as a
+  percentage. A higher percentage generally means the cells are dividing
+  more quickly, but the way this percentage is interpreted (and whether it
+  changes the overall grade) depends on the specific type of cancer.
+conditional_table_trigger:
+  detection_patterns:
+    - "\\bneuroendocrine\\b"
+    - "\\bnet\\b"
+    - "\\bcarcinoid\\b"
+  table_markdown: |
+    | Ki-67 Index | Grade (Neuroendocrine Tumor) |
+    |---|---|
+    | <3% | Grade 1 (Low) |
+    | 3-20% | Grade 2 (Intermediate) |
+    | >20% | Grade 3 (High) |
+  note: |
+    This specific grading table only applies to neuroendocrine tumors (NETs).
+    Do not apply it to breast cancer or other tumor types where Ki-67 is
+    reported but no formal grade cutoff of this kind exists.
+notes: |
+  Do NOT generate a generic "risk tier" table for Ki-67 outside the
+  neuroendocrine context — no single universally standardized cutoff
+  exists across all cancer types, and doing so risks misleading precision.
+source_citation: >
+  Dowsett M, Nielsen TO, A'Hern R, et al. "Assessment of Ki67 in breast
+  cancer: recommendations from the International Ki67 in Breast Cancer
+  working group." J Natl Cancer Inst. 2011;103(22):1656-64; NET grading per
+  WHO Classification of Tumours of Endocrine Organs, 4th edition, 2017.

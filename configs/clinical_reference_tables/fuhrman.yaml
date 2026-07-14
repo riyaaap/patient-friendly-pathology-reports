@@ -1,0 +1,23 @@
+system_name: "Fuhrman Nuclear Grade"
+cancer_type: "Renal cell carcinoma"
+detection_patterns:
+  - "\\bfuhrman\\b"
+legacy_names: []
+table_columns_used: ["Fuhrman Grade", "Nuclear Description", "Risk Tier"]
+table_markdown: |
+  | Fuhrman Grade | Nuclear Description | Risk Tier |
+  |---|---|---|
+  | 1 | Small, uniform, round nuclei | Low |
+  | 2 | Slightly irregular nuclei | Low-Intermediate |
+  | 3 | Moderately irregular nuclei, visible nucleoli | High |
+  | 4 | Bizarre, multilobed nuclei, prominent nucleoli | Very High |
+explanation_text: |
+  The Fuhrman grade describes how abnormal the nuclei (the control center of
+  a cell) of the tumor cells look under a microscope. A lower grade (1) means
+  the cells look more like normal cells and tend to grow more slowly; a
+  higher grade (4) means the cells look very abnormal and tend to be more
+  aggressive.
+notes: ""
+source_citation: >
+  Fuhrman SA, Lasky LC, Limas C. "Prognostic significance of morphologic
+  parameters in renal cell carcinoma." Am J Surg Pathol. 1982;6(7):655-63.

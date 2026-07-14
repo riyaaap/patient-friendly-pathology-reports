@@ -1,0 +1,31 @@
+system_name: "Nottingham Histologic Grade"
+cancer_type: "Breast carcinoma"
+detection_patterns:
+  - "\\bnottingham\\b"
+  - "\\bbloom[\\s-]?richardson\\b"
+legacy_names: ["Bloom-Richardson", "Scarff-Bloom-Richardson", "modified Bloom-Richardson"]
+table_columns_used: ["Total Score", "Grade", "Differentiation"]
+table_markdown: |
+  | Total Score (sum of 3 components, each scored 1-3) | Grade | Differentiation |
+  |---|---|---|
+  | 3-5 | Grade 1 | Well differentiated (low grade) |
+  | 6-7 | Grade 2 | Moderately differentiated (intermediate grade) |
+  | 8-9 | Grade 3 | Poorly differentiated (high grade) |
+explanation_text: |
+  The Nottingham grade (also historically called the Bloom-Richardson grade —
+  these refer to the same underlying system, with Nottingham being the
+  current, refined version) scores three features of the tumor cells under a
+  microscope: how much they resemble normal breast tissue structure, how
+  abnormal the nuclei look, and how many cells are actively dividing
+  (mitotic count). Each of the three features is scored 1-3, and the three
+  scores are added together (total 3-9) to produce the overall grade.
+notes: |
+  Always treat "Bloom-Richardson," "Scarff-Bloom-Richardson," and
+  "Nottingham" as the SAME system when found in source text — do not
+  generate two separate tables or treat scores as non-comparable.
+source_citation: >
+  Bloom HJ, Richardson WW. "Histological grading and prognosis in breast
+  cancer." Br J Cancer. 1957;11(3):359-77 (original system); Elston CW,
+  Ellis IO. "Pathological prognostic factors in breast cancer. I. The value
+  of histological grade in breast cancer." Histopathology. 1991;19(5):403-10
+  (Nottingham modification, current clinical standard).

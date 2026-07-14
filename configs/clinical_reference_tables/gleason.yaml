@@ -1,0 +1,29 @@
+system_name: "Gleason Score / Grade Group"
+cancer_type: "Prostate adenocarcinoma"
+detection_patterns:
+  - "\\bgleason\\b"
+legacy_names: []
+table_columns_used: ["Gleason Score", "Grade Group", "Risk Tier"]
+table_markdown: |
+  | Gleason Score | Grade Group | Risk Tier |
+  |---|---|---|
+  | ≤6 | 1 | Low |
+  | 7 (3 + 4) | 2 | Favorable Intermediate |
+  | 7 (4 + 3) | 3 | Unfavorable Intermediate |
+  | 8 (4 + 4, 3 + 5, 5 + 3) | 4 | High |
+  | 9-10 | 5 | Very High |
+explanation_text: |
+  The Gleason score describes how abnormal prostate cancer cells look under a
+  microscope, based on the two most common patterns seen. The two pattern
+  scores (each 1-5) are added together to get the Gleason score (6-10). This
+  score is grouped into a Grade Group (1-5), which doctors use as a general
+  reference for how the cancer is likely to behave.
+notes: |
+  Gleason 4+3 and 3+4 both sum to 7 but represent DIFFERENT Grade Groups (3
+  and 2 respectively) because the FIRST number reflects the most common
+  pattern. Do not average or collapse these into a single row.
+source_citation: >
+  Gleason DF. Cancer Chemother Rep. 1966;50(3):125-8; Grade Group mapping per
+  Epstein JI et al. "The 2014 International Society of Urological Pathology
+  (ISUP) Consensus Conference on Gleason Grading of Prostatic Carcinoma."
+  Am J Surg Pathol. 2016;40(2):244-52.
