@@ -23,7 +23,7 @@ from pathlib import Path
 # registry entry for yet (site-dependent staging, unsafe to auto-generate).
 # Any table the teacher produces under these names gets stripped, not trusted.
 DEFERRED_UNREGISTERED_SYSTEMS = {
-    "TNM staging": [r"\btnm\b"],
+    "TNM": [r"\btnm\b"],
     "FIGO": [r"\bfigo\b"],
     "AJCC": [r"\bamerican joint committee\b", r"\bajcc\b"],
     "Masaoka": [r"\bmasaoka\b"],
