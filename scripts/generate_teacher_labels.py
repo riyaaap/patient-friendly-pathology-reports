@@ -4,11 +4,11 @@ generate_teacher_labels.py
 Generates patient-friendly "silver label" pathology report rewrites using a
 locally-hosted teacher LLM (via vLLM's OpenAI-compatible chat completions API).
 Teacher LLM model used is Qwen2.5-14B
-<<<<<<< HEAD
 """
 
 """
 To run this file in terminal to view sample generated output for a few reports, do:
+
 python -c "
 import json
 
@@ -17,17 +17,21 @@ with open('data/processed/silver_labels_dryrun.jsonl') as f:
 
 for entry in lines:
     if 'EB-A82B' in entry['patient_filename']:
-        print('=== RAW REPORT ===')
-        print(entry['raw_report'][:500])
+        print('=== FULL RAW REPORT (EB-A82B) ===')
+        print(entry['raw_report'])
         print()
-        print('=== SILVER TARGET ===')
+
+for entry in lines:
+    if 'KK-A6E8' in entry['patient_filename']:
+        print('=== FULL RAW REPORT (KK-A6E8) ===')
+        print(entry['raw_report'])
+        print()
+        print('=== SILVER TARGET (KK-A6E8) ===')
         print(entry['silver_target'])
-        print('='*80)
 "
 
-... where 'E8-A82B' can be replaced with the specific TCGA report ID wanted to be viewed
+... where 'E8-A82B', and 'KK-A6E8' can be replaced with the specific TCGA report ID wanted to be viewed
 =======
->>>>>>> aaa29e8cc5fdac1e601ba97f8e2e9fa7b2f8b0f6
 """
 
 import argparse
