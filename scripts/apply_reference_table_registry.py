@@ -98,23 +98,49 @@ def replace_or_insert_table(silver_text: str, canonical_table_md: str,
     return new_text, "REPLACED_OK"
 
 
+SECTION1_TABLE_HEADER_SIGNATURE = [
+    "Biopsy Result and Type of Biopsy",
+    "Diagnosis",
+    "Grade",
+    "Amount",
+]
+
+
+def get_table_header_columns(table_text: str):
+    first_line = table_text.strip().splitlines()[0]
+    return [c.strip() for c in first_line.strip("|").split("|")]
+
+
+def is_protected_section1_table(table_text: str) -> bool:
+    cols = get_table_header_columns(table_text)
+    return all(sig in cols for sig in SECTION1_TABLE_HEADER_SIGNATURE)
+
 def strip_table_for_deferred_system(silver_text: str, system_label: str):
     tables = find_markdown_tables(silver_text)
     if not tables:
         return silver_text, "NO_ACTION_NO_TABLE_PRESENT"
-    if len(tables) > 1:
-        return silver_text, "MULTIPLE_TABLES_MANUAL_REVIEW_NEEDED"
 
-    start, end, _ = tables[0]
-    replacement_note = (
-        f"\n_Note: {system_label} staging is present in the source report. "
-        f"A general reference table is not shown here because this system's "
-        f"interpretation depends on cancer type/site — please discuss the "
-        f"specific staging with your doctor._\n"
-    )
+    protected = [t for t in tables if is_protected_section1_table(t[2])]
+    candidates = [t for t in tables if not is_protected_section1_table(t[2])]
+
+    note_after_note = "Note: " + system_label + " staging is mentioned in the source report. A general reference table is not shown here because this system's interpretation depends on cancer type or site. Please discuss the specific staging with your doctor."
+    note_replace_text = "Note: " + system_label + " staging is present in the source report. A general reference table is not shown here because this system's interpretation depends on cancer type or site. Please discuss the specific staging with your doctor."
+
+    if len(candidates) == 0:
+        if protected:
+            start, end, _ = protected[0]
+            replacement_note = chr(10) + chr(10) + "_" + note_after_note + "_" + chr(10)
+            new_text = silver_text[:end] + replacement_note + silver_text[end:]
+            return new_text, "NOTE_APPENDED_AFTER_SECTION1_TABLE"
+        return silver_text, "NO_ACTION_NO_TABLE_PRESENT"
+
+    if len(candidates) > 1:
+        return silver_text, "MULTIPLE_NON_PROTECTED_TABLES_MANUAL_REVIEW_NEEDED"
+
+    start, end, _ = candidates[0]
+    replacement_note = chr(10) + "_" + note_replace_text + "_" + chr(10)
     new_text = silver_text[:start] + replacement_note + silver_text[end:]
     return new_text, "STRIPPED_DEFERRED_SYSTEM"
-
 
 def process(input_jsonl, output_jsonl, registry_dir, report_csv):
     registry = load_registry(registry_dir)
