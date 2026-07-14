@@ -9,7 +9,7 @@ Usage:
     python clean_and_filter_reports.py \
         --input_csv /path/to/tcga_reports.csv \
         --filename_col patient_filename \
-        --text_col report_text \
+        --text_col text \
         --output_dir ./data_out
 """
 
@@ -79,7 +79,7 @@ def main():
     parser = argparse.ArgumentParser(description="Clean and filter TCGA pathology report CSV")
     parser.add_argument("--input_csv", required=True, help="Path to raw Mendeley CSV")
     parser.add_argument("--filename_col", default="patient_filename", help="Column name for patient/filename identifier")
-    parser.add_argument("--text_col", default="report_text", help="Column name for raw report text")
+    parser.add_argument("--text_col", default="text", help="Column name for raw report text")
     parser.add_argument("--output_dir", default="./data_out", help="Directory to write cleaned CSV + histogram")
     parser.add_argument("--filter_percentile", type=float, default=5.0, help="Bottom percentile of word counts to drop")
     args = parser.parse_args()
