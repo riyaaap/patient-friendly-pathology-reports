@@ -17,7 +17,7 @@ def main():
     args = parser.parse_args()
 
     df = pd.read_csv(args.input_csv)
-    tss_df = pd.read_csv(args.tss_lookup_csv)
+    tss_df = pd.read_csv(args.tss_lookup_csv, keep_default_na=False, na_values=[""])
     tss_map = dict(zip(tss_df["tss_code"], tss_df["study_name"]))
 
     df["tss_code"] = df["patient_filename"].apply(get_tss_code)
