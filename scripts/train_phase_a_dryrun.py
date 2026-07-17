@@ -1,5 +1,7 @@
 import yaml
 import torch
+from liger_kernel.transformers import apply_liger_kernel_to_llama
+apply_liger_kernel_to_llama()
 import os
 
 print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
@@ -53,6 +55,7 @@ training_args = TrainingArguments(
     output_dir="checkpoints/phase_a_dryrun",
     num_train_epochs=1,
     per_device_train_batch_size=cfg["training"]["per_device_train_batch_size"],
+    per_device_eval_batch_size=1,
     gradient_accumulation_steps=4,
     learning_rate=cfg["training"]["learning_rate"],
     lr_scheduler_type=cfg["training"]["lr_scheduler_type"],
@@ -66,6 +69,8 @@ training_args = TrainingArguments(
     save_strategy="no",
     optim=cfg["training"]["optim"],
     report_to="none",
+    prediction_loss_only=True,
+    eval_accumulation_steps=1,
 )
 
 data_collator = DataCollatorForSeq2Seq(
