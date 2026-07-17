@@ -5,9 +5,25 @@ apply_liger_kernel_to_llama()
 import os
 print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
 print("torch sees", torch.cuda.device_count(), "device(s)")
-assert torch.cuda.device_count() == 1, "Refusing to run: expected exactly 1 visible GPU, got " + str(torch.cuda.device_count())
+expected = int(os.environ.get("EXPECTED_NUM_GPUS", 1))
+assert torch.cuda.device_count() == expected, (
+    f"Refusing to run: expected {expected} visible GPU(s), got {torch.cuda.device_count()}"
+)  # and will export expected num gpus = 2 at launch.. just to keep guard in case use 1 some other time
+
 import json
 from datetime import datetime
+import gc
+from transformers import TrainerCallback
+
+class SafeEvalTrainer(Trainer):
+    def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
+        assert not torch.is_grad_enabled(), "Grad unexpectedly enabled during eval step"
+        return super().prediction_step(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
+
+class MemCleanupCallback(TrainerCallback):
+    def on_evaluate(self, args, state, control, **kwargs):
+        gc.collect()
+        torch.cuda.empty_cache()
 
 from datasets import load_from_disk
 from transformers import (
@@ -54,7 +70,7 @@ training_args = TrainingArguments(
     output_dir=cfg["output_dir"],
     num_train_epochs=cfg["training"]["num_train_epochs"],
     per_device_train_batch_size=cfg["training"]["per_device_train_batch_size"],
-    per_device_eval_batch_size=1,
+    per_device_eval_batch_size=cfg["training"]["per_device_eval_batch_size"],
     gradient_accumulation_steps=cfg["training"]["gradient_accumulation_steps"],
     learning_rate=cfg["training"]["learning_rate"],
     lr_scheduler_type=cfg["training"]["lr_scheduler_type"],
@@ -71,7 +87,7 @@ training_args = TrainingArguments(
     optim=cfg["training"]["optim"],
     report_to="none",
     prediction_loss_only=True,
-    eval_accumulation_steps=1,
+    eval_accumulation_steps=cfg["training"]["eval_accumulation_steps"],
 )
 
 data_collator = DataCollatorForSeq2Seq(
@@ -80,12 +96,13 @@ data_collator = DataCollatorForSeq2Seq(
     label_pad_token_id=-100,
 )
 
-trainer = Trainer(
+trainer = SafeEvalTrainer(
     model=model,
     args=training_args,
     train_dataset=train_ds,
     eval_dataset=val_ds,
     data_collator=data_collator,
+    callbacks=[MemCleanupCallback()],
 )
 
 train_result = trainer.train()
