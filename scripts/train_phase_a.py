@@ -45,10 +45,11 @@ tokenizer = AutoTokenizer.from_pretrained(cfg["base_model"])
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
+local_rank = int(os.environ.get("LOCAL_RANK", 0))
 model = AutoModelForCausalLM.from_pretrained(
     cfg["base_model"],
     torch_dtype=torch.float16,
-    device_map={"": 0},
+    device_map={"": local_rank},
 )
 
 lora_cfg = LoraConfig(
