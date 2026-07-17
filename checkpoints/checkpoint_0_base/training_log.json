@@ -1,0 +1,8 @@
+{
+  "phase": "checkpoint_0_base",
+  "timestamp": "2026-07-17T11:57:32.207653",
+  "base_model": "meta-llama/Llama-3.1-8B",
+  "adapter_config": null,
+  "note": "Untuned base model snapshot, no LoRA adapter applied. Serves as baseline for Phase D eval comparison.",
+  "save_path": "checkpoints/checkpoint_0_base"
+}

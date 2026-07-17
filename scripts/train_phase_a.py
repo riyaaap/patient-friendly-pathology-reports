@@ -6,6 +6,8 @@ import os
 print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
 print("torch sees", torch.cuda.device_count(), "device(s)")
 assert torch.cuda.device_count() == 1, "Refusing to run: expected exactly 1 visible GPU, got " + str(torch.cuda.device_count())
+import json
+from datetime import datetime
 
 from datasets import load_from_disk
 from transformers import (
@@ -86,8 +88,38 @@ trainer = Trainer(
     data_collator=data_collator,
 )
 
-trainer.train()
+train_result = trainer.train()
+eval_metrics = trainer.evaluate()
 
 model.save_pretrained(f"{cfg['output_dir']}/final_adapter")
 tokenizer.save_pretrained(f"{cfg['output_dir']}/final_adapter")
-print("Phase A adapter saved to:", f"{cfg['output_dir']}/final_adapter") 
+
+log_entry = {
+    "phase": "phase_a_sft",
+    "timestamp": datetime.now().isoformat(),
+    "base_model": cfg["base_model"],
+    "adapter_config": {
+        "r": cfg["lora"]["r"],
+        "alpha": cfg["lora"]["alpha"],
+        "dropout": cfg["lora"]["dropout"],
+        "target_modules": cfg["lora"]["target_modules"],
+        "bias": cfg["lora"]["bias"],
+    },
+    "data_version": {
+        "train_path": f"{TOKENIZED_DIR}/train",
+        "val_path": f"{TOKENIZED_DIR}/val",
+        "train_rows": len(train_ds),
+        "val_rows": len(val_ds),
+    },
+    "final_train_loss": train_result.metrics.get("train_loss"),
+    "final_eval_loss": eval_metrics.get("eval_loss"),
+    "adapter_path": f"{cfg['output_dir']}/final_adapter",
+}
+
+log_path = f"{cfg['output_dir']}/training_log.json"
+with open(log_path, "w") as f:
+    json.dump(log_entry, f, indent=2)
+
+print("Phase A adapter saved to:", f"{cfg['output_dir']}/final_adapter")
+print("Training log saved to:", log_path)
+print(json.dumps(log_entry, indent=2))
