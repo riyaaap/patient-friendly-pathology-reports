@@ -13,7 +13,14 @@ assert torch.cuda.device_count() == expected, (
 import json
 from datetime import datetime
 import gc
-from transformers import TrainerCallback
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    TrainingArguments,
+    Trainer,
+    DataCollatorForSeq2Seq,
+    TrainerCallback
+)
 
 class SafeEvalTrainer(Trainer):
     def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
@@ -26,13 +33,6 @@ class MemCleanupCallback(TrainerCallback):
         torch.cuda.empty_cache()
 
 from datasets import load_from_disk
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    TrainingArguments,
-    Trainer,
-    DataCollatorForSeq2Seq,
-)
 from peft import LoraConfig, get_peft_model, TaskType
 
 CONFIG_PATH = "configs/lora_phase_a.yaml"
