@@ -108,35 +108,44 @@ trainer = SafeEvalTrainer(
 train_result = trainer.train()
 eval_metrics = trainer.evaluate()
 
-model.save_pretrained(f"{cfg['output_dir']}/final_adapter")
-tokenizer.save_pretrained(f"{cfg['output_dir']}/final_adapter")
+if trainer.is_world_process_zero():
+    model.save_pretrained(f"{cfg['output_dir']}/final_adapter")
+    tokenizer.save_pretrained(f"{cfg['output_dir']}/final_adapter")
 
-log_entry = {
-    "phase": "phase_a_sft",
-    "timestamp": datetime.now().isoformat(),
-    "base_model": cfg["base_model"],
-    "adapter_config": {
-        "r": cfg["lora"]["r"],
-        "alpha": cfg["lora"]["alpha"],
-        "dropout": cfg["lora"]["dropout"],
-        "target_modules": cfg["lora"]["target_modules"],
-        "bias": cfg["lora"]["bias"],
-    },
-    "data_version": {
-        "train_path": f"{TOKENIZED_DIR}/train",
-        "val_path": f"{TOKENIZED_DIR}/val",
-        "train_rows": len(train_ds),
-        "val_rows": len(val_ds),
-    },
-    "final_train_loss": train_result.metrics.get("train_loss"),
-    "final_eval_loss": eval_metrics.get("eval_loss"),
-    "adapter_path": f"{cfg['output_dir']}/final_adapter",
-}
+    num_gpus = torch.cuda.device_count()
+    per_device_bs = cfg["training"]["per_device_train_batch_size"]
+    grad_accum = cfg["training"]["gradient_accumulation_steps"]
 
-log_path = f"{cfg['output_dir']}/training_log.json"
-with open(log_path, "w") as f:
-    json.dump(log_entry, f, indent=2)
+    log_entry = {
+        "phase": "phase_a_sft",
+        "timestamp": datetime.now().isoformat(),
+        "base_model": cfg["base_model"],
+        "adapter_config": {
+            "r": cfg["lora"]["r"],
+            "alpha": cfg["lora"]["alpha"],
+            "dropout": cfg["lora"]["dropout"],
+            "target_modules": cfg["lora"]["target_modules"],
+            "bias": cfg["lora"]["bias"],
+        },
+        "data_version": {
+            "train_path": f"{TOKENIZED_DIR}/train",
+            "val_path": f"{TOKENIZED_DIR}/val",
+            "train_rows": len(train_ds),
+            "val_rows": len(val_ds),
+        },
+        "num_gpus": num_gpus,
+        "per_device_train_batch_size": per_device_bs,
+        "gradient_accumulation_steps": grad_accum,
+        "effective_global_batch_size": per_device_bs * grad_accum * num_gpus,
+        "final_train_loss": train_result.metrics.get("train_loss"),
+        "final_eval_loss": eval_metrics.get("eval_loss"),
+        "adapter_path": f"{cfg['output_dir']}/final_adapter",
+    }
 
-print("Phase A adapter saved to:", f"{cfg['output_dir']}/final_adapter")
-print("Training log saved to:", log_path)
-print(json.dumps(log_entry, indent=2))
+    log_path = f"{cfg['output_dir']}/training_log.json"
+    with open(log_path, "w") as f:
+        json.dump(log_entry, f, indent=2)
+
+    print("Phase A adapter saved to:", f"{cfg['output_dir']}/final_adapter")
+    print("Training log saved to:", log_path)
+    print(json.dumps(log_entry, indent=2))
