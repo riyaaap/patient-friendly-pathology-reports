@@ -1,8 +1,9 @@
 import yaml
+import os
+os.environ["TRITON_CACHE_DIR"] = f"/tmp/triton_cache_{os.environ.get('LOCAL_RANK', '0')}"
 import torch
 from liger_kernel.transformers import apply_liger_kernel_to_llama
 apply_liger_kernel_to_llama()
-import os
 import gc
 
 print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
@@ -50,6 +51,15 @@ class MemCleanupCallback(TrainerCallback):
     def on_evaluate(self, args, state, control, **kwargs):
         gc.collect()
         torch.cuda.empty_cache()
+
+class ProgressCallback(TrainerCallback):
+    def on_step_begin(self, args, state, control, **kwargs):
+        rank = os.environ.get("LOCAL_RANK", "?")
+        print(f"[rank {rank}] >>> starting step {state.global_step}", flush=True)
+
+    def on_step_end(self, args, state, control, **kwargs):
+        rank = os.environ.get("LOCAL_RANK", "?")
+        print(f"[rank {rank}] <<< finished step {state.global_step}", flush=True)
 
 tokenizer = AutoTokenizer.from_pretrained(cfg["base_model"])
 if tokenizer.pad_token is None:
@@ -115,7 +125,7 @@ trainer = SafeEvalTrainer(
     train_dataset=train_ds,
     eval_dataset=val_ds,
     data_collator=data_collator,
-    callbacks=[MemCleanupCallback()],
+    callbacks=[MemCleanupCallback(), ProgressCallback()],
 )
 
 trainer.train()
