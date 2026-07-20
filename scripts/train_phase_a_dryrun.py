@@ -3,18 +3,23 @@ import torch
 from liger_kernel.transformers import apply_liger_kernel_to_llama
 apply_liger_kernel_to_llama()
 import os
+import gc
 
 print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
 print("torch sees", torch.cuda.device_count(), "device(s)")
-assert torch.cuda.device_count() == 1, "Refusing to run: expected exactly 1 visible GPU, got " + str(torch.cuda.device_count())
+expected = int(os.environ.get("EXPECTED_NUM_GPUS", 1))
+assert torch.cuda.device_count() == expected, (
+    f"Refusing to run: expected {expected} visible GPU(s), got {torch.cuda.device_count()}"
+)
 
-from datasets import load_from_disk
+from datasets import load_from_disk, concatenate_datasets
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     TrainingArguments,
     Trainer,
     DataCollatorForSeq2Seq,
+    TrainerCallback,
 )
 from peft import LoraConfig, get_peft_model, TaskType
 
@@ -26,14 +31,35 @@ DRYRUN_VAL_SIZE = 10
 with open(CONFIG_PATH) as f:
     cfg = yaml.safe_load(f)
 
+def pad_to_even(ds, num_gpus, per_device_batch):
+    multiple = num_gpus * per_device_batch
+    remainder = len(ds) % multiple
+    if remainder != 0:
+        pad_n = multiple - remainder
+        pad_rows = ds.select(range(min(pad_n, len(ds))))
+        ds = concatenate_datasets([ds, pad_rows])
+    return ds
+
+class SafeEvalTrainer(Trainer):
+    def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
+        assert not torch.is_grad_enabled(), "Grad unexpectedly enabled during eval step"
+        return super().prediction_step(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
+
+
+class MemCleanupCallback(TrainerCallback):
+    def on_evaluate(self, args, state, control, **kwargs):
+        gc.collect()
+        torch.cuda.empty_cache()
+
 tokenizer = AutoTokenizer.from_pretrained(cfg["base_model"])
 if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
+local_rank = int(os.environ.get("LOCAL_RANK", 0))
 model = AutoModelForCausalLM.from_pretrained(
     cfg["base_model"],
     torch_dtype=torch.float16,
-    device_map={"": 0},
+    device_map={"": local_rank},
 )
 
 lora_cfg = LoraConfig(
@@ -51,12 +77,16 @@ model.print_trainable_parameters()
 train_ds = load_from_disk(f"{TOKENIZED_DIR}/train").select(range(DRYRUN_TRAIN_SIZE))
 val_ds = load_from_disk(f"{TOKENIZED_DIR}/val").select(range(DRYRUN_VAL_SIZE))
 
+num_gpus = torch.cuda.device_count()
+train_ds = pad_to_even(train_ds, num_gpus, cfg["training"]["per_device_train_batch_size"])
+val_ds = pad_to_even(val_ds, num_gpus, cfg["training"]["per_device_eval_batch_size"])
+
 training_args = TrainingArguments(
     output_dir="checkpoints/phase_a_dryrun",
     num_train_epochs=1,
     per_device_train_batch_size=cfg["training"]["per_device_train_batch_size"],
-    per_device_eval_batch_size=1,
-    gradient_accumulation_steps=4,
+    per_device_eval_batch_size=cfg["training"]["per_device_eval_batch_size"],
+    gradient_accumulation_steps=cfg["training"]["gradient_accumulation_steps"],
     learning_rate=cfg["training"]["learning_rate"],
     lr_scheduler_type=cfg["training"]["lr_scheduler_type"],
     warmup_ratio=0.0,
@@ -70,7 +100,7 @@ training_args = TrainingArguments(
     optim=cfg["training"]["optim"],
     report_to="none",
     prediction_loss_only=True,
-    eval_accumulation_steps=1,
+    eval_accumulation_steps=cfg["training"]["eval_accumulation_steps"],
 )
 
 data_collator = DataCollatorForSeq2Seq(
@@ -79,12 +109,13 @@ data_collator = DataCollatorForSeq2Seq(
     label_pad_token_id=-100,
 )
 
-trainer = Trainer(
+trainer = SafeEvalTrainer(
     model=model,
     args=training_args,
     train_dataset=train_ds,
     eval_dataset=val_ds,
     data_collator=data_collator,
+    callbacks=[MemCleanupCallback()],
 )
 
 trainer.train()
