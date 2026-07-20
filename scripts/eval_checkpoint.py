@@ -6,6 +6,7 @@ from peft import PeftModel
 import textstat
 from rouge_score import rouge_scorer
 from bert_score import score as bertscore
+import pandas as pd
 
 print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
 print("torch sees", torch.cuda.device_count(), "device(s)")
@@ -28,8 +29,26 @@ if args.adapter_path:
     model = PeftModel.from_pretrained(model, args.adapter_path)
 model.eval()
 
-import pandas as pd
-val_df = pd.read_csv(VAL_PATH).head(args.n_samples)
+SILVER_LABELS_PATH = "data/processed/silver_labels_final.jsonl"
+# Load silver labels into a lookup dict keyed by patient_filename
+silver_lookup = {}
+with open(SILVER_LABELS_PATH) as f:
+    for line in f:
+        row = json.loads(line)
+        silver_lookup[row["patient_filename"]] = row
+
+val_meta = pd.read_csv(VAL_PATH).head(args.n_samples)
+
+val_df = []
+for _, meta_row in val_meta.iterrows():
+    fname = meta_row["patient_filename"]
+    if fname not in silver_lookup:
+        print(f"WARNING: {fname} not found in silver labels, skipping")
+        continue
+    entry = silver_lookup[fname]
+    val_df.append({"raw_report": entry["raw_report"], "silver_target": entry["silver_target"]})
+
+val_df = pd.DataFrame(val_df)
 
 generations, references, sources = [], [], []
 for _, row in val_df.iterrows():

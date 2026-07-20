@@ -1,0 +1,8 @@
+{
+  "checkpoint": "checkpoint_0_base",
+  "n_samples": 20,
+  "rouge_l_mean": 0.07329504925429108,
+  "bertscore_f1_mean": 0.5804533362388611,
+  "flesch_kincaid_mean": 14.282243901613603,
+  "gunning_fog_mean": 17.3987112965757
+}

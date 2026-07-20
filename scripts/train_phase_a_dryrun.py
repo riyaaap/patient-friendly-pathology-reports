@@ -3,7 +3,7 @@ import os
 os.environ["TRITON_CACHE_DIR"] = f"/tmp/triton_cache_{os.environ.get('LOCAL_RANK', '0')}"
 import torch
 from liger_kernel.transformers import apply_liger_kernel_to_llama
-apply_liger_kernel_to_llama()
+#apply_liger_kernel_to_llama()
 import gc
 
 print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
