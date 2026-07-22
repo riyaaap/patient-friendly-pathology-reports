@@ -29,13 +29,20 @@ from transformers import (
 
 class SafeEvalTrainer(Trainer):
     def prediction_step(self, model, inputs, prediction_loss_only, ignore_keys=None):
-        assert not torch.is_grad_enabled(), "Grad unexpectedly enabled during eval step"
-        return super().prediction_step(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
+        with torch.no_grad():
+            assert not torch.is_grad_enabled(), "Grad unexpectedly enabled during eval step"
+            return super().prediction_step(model, inputs, prediction_loss_only, ignore_keys=ignore_keys)
 
 class MemCleanupCallback(TrainerCallback):
     def on_evaluate(self, args, state, control, **kwargs):
         gc.collect()
         torch.cuda.empty_cache()
+
+class ProgressCallback(TrainerCallback):
+    def on_step_begin(self, args, state, control, **kwargs):
+        print(f">>> starting step {state.global_step}", flush=True)
+    def on_step_end(self, args, state, control, **kwargs):
+        print(f"<<< finished step {state.global_step}", flush=True)
 
 from datasets import load_from_disk
 from peft import LoraConfig, get_peft_model, TaskType
