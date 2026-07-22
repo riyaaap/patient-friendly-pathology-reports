@@ -83,7 +83,7 @@ if QUICK_TEST:
     train_ds = train_ds.select(range(min(n, len(train_ds))))
     val_ds = val_ds.select(range(min(n, len(val_ds))))
     cfg["output_dir"] = "checkpoints/phase_a_full_script_dryrun"
-    print(f"[QUICK_TEST] {len(train_ds)} train / {len(val_ds)} val rows, output_dir={cfg['ouput_dir']}")
+    print(f"[QUICK_TEST] {len(train_ds)} train / {len(val_ds)} val rows, output_dir={cfg['output_dir']}")
 
 training_args = TrainingArguments(
     output_dir=cfg["output_dir"],
