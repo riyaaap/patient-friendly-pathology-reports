@@ -2,6 +2,9 @@ import yaml
 import os
 
 local_rank_env = os.environ.get("LOCAL_RANK", "0")
+
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 os.environ.setdefault("TRITON_CACHE_DIR", f"/tmp/triton_cache_rank{local_rank_env}")
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1,2")
 os.environ.setdefault("EXPECTED_NUM_GPUS", "2")
@@ -39,6 +42,14 @@ class MemCleanupCallback(TrainerCallback):
     def on_evaluate(self, args, state, control, **kwargs):
         gc.collect()
         torch.cuda.empty_cache()
+
+class PeriodicMemCleanupCallback(TrainerCallback):
+    def __init__(self, every_n_steps=5):
+        self.every_n_steps = every_n_steps
+    def on_step_end(self, args, state, control, **kwargs):
+        if state.global_step % self.every_n_steps == 0:
+            gc.collect()
+            torch.cuda.empty_cache()
 
 class ProgressCallback(TrainerCallback):
     def on_step_begin(self, args, state, control, **kwargs):
@@ -132,7 +143,7 @@ trainer = SafeEvalTrainer(
     train_dataset=train_ds,
     eval_dataset=val_ds,
     data_collator=data_collator,
-    callbacks=[MemCleanupCallback(), ProgressCallback()],
+    callbacks=[MemCleanupCallback(), PeriodicMemCleanupCallback(every_n_steps=5), ProgressCallback()],
 )
 
 train_result = trainer.train()
