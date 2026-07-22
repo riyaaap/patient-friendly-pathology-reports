@@ -75,6 +75,16 @@ print(f"[rank {local_rank}] trainable param tensors: {n_trainable}")
 train_ds = load_from_disk(f"{TOKENIZED_DIR}/train")
 val_ds = load_from_disk(f"{TOKENIZED_DIR}/val")
 
+## code below ONLY for testing/"dry-run" purposes, running pipeline quickly to ensure completion:
+# just helps limit size of data processed to smaller set for short run, test all stages work as intended
+QUICK_TEST = os.environ.get("QUICK_TEST", "0") == "1"
+if QUICK_TEST:
+    n = int(os.environ.get("QUICK_TEST_N", 20))
+    train_ds = train_ds.select(range(min(n, len(train_ds))))
+    val_ds = val_ds.select(range(min(n, len(val_ds))))
+    cfg["output_dir"] = "checkpoints/phase_a_full_script_dryrun"
+    print(f"[QUICK_TEST] {len(train_ds)} train / {len(val_ds)} val rows, output_dir={cfg['ouput_dir']}")
+
 training_args = TrainingArguments(
     output_dir=cfg["output_dir"],
     num_train_epochs=cfg["training"]["num_train_epochs"],
@@ -98,6 +108,7 @@ training_args = TrainingArguments(
     report_to="none",
     prediction_loss_only=True,
     eval_accumulation_steps=cfg["training"]["eval_accumulation_steps"],
+    max_steps=int(os.environ.get("QUICK_TEST_MAX_STEPS", -1)), # -1 is HF Trainer default, for no override + just use epoch count
 )
 
 data_collator = DataCollatorForSeq2Seq(
