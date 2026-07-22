@@ -4,6 +4,13 @@ faulthandler.register(signal.SIGUSR1)
 import yaml
 import os
 os.environ["TRITON_CACHE_DIR"] = "/tmp/triton_cache_single"
+
+# Reproducibility defaults — override via terminal export if a different
+# GPU pair or config is ever needed; these are just tested defaults.
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1,2")
+os.environ.setdefault("NCCL_P2P_DISABLE", "1")
+os.environ.setdefault("EXPECTED_NUM_GPUS", "2")
+
 import torch
 from liger_kernel.transformers import apply_liger_kernel_to_llama
 apply_liger_kernel_to_llama()
@@ -87,14 +94,15 @@ training_args = TrainingArguments(
     output_dir="checkpoints/phase_a_dryrun",
     num_train_epochs=1,
     per_device_train_batch_size=4,
-    per_device_eval_batch_size=4,
-    gradient_accumulation_steps=4,
+    per_device_eval_batch_size=2,
+    gradient_accumulation_steps=8,
     learning_rate=cfg["training"]["learning_rate"],
     lr_scheduler_type=cfg["training"]["lr_scheduler_type"],
     warmup_ratio=0.0,
     weight_decay=cfg["training"]["weight_decay"],
     fp16=cfg["training"]["fp16"],
     gradient_checkpointing=cfg["training"]["gradient_checkpointing"],
+    gradient_checkpointing_kwargs={"use_reentrant": False},
     logging_steps=1,
     eval_strategy="steps",
     max_steps=7,
