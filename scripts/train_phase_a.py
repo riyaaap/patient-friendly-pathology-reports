@@ -1,8 +1,13 @@
 import yaml
+import os
+
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1,2")
+os.environ.setdefault("EXPECTED_NUM_GPUS", "2")
+os.environ.setdefault("NCCL_P2P_DISABLE", "1")
+
 import torch
 from liger_kernel.transformers import apply_liger_kernel_to_llama
 apply_liger_kernel_to_llama()
-import os
 print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
 print("torch sees", torch.cuda.device_count(), "device(s)")
 expected = int(os.environ.get("EXPECTED_NUM_GPUS", 1))
@@ -46,10 +51,10 @@ if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
 local_rank = int(os.environ.get("LOCAL_RANK", 0))
+torch.cuda.set_device(local_rank)
 model = AutoModelForCausalLM.from_pretrained(
     cfg["base_model"],
     torch_dtype=torch.float16,
-    device_map={"": local_rank},
 )
 
 lora_cfg = LoraConfig(
@@ -63,6 +68,9 @@ lora_cfg = LoraConfig(
 model = get_peft_model(model, lora_cfg)
 model.enable_input_require_grads()
 model.print_trainable_parameters()
+
+n_trainable = sum(p.requires_grad for p in model.parameters())
+print(f"[rank {local_rank}] trainable param tensors: {n_trainable}")
 
 train_ds = load_from_disk(f"{TOKENIZED_DIR}/train")
 val_ds = load_from_disk(f"{TOKENIZED_DIR}/val")
@@ -79,6 +87,7 @@ training_args = TrainingArguments(
     weight_decay=cfg["training"]["weight_decay"],
     fp16=cfg["training"]["fp16"],
     gradient_checkpointing=cfg["training"]["gradient_checkpointing"],
+    gradient_checkpointing_kwargs={"use_reentrant": False},
     logging_steps=cfg["training"]["logging_steps"],
     eval_strategy=cfg["training"]["eval_strategy"],
     eval_steps=cfg["training"]["eval_steps"],
