@@ -1,6 +1,8 @@
 import yaml
 import os
 
+local_rank_env = os.environ.get("LOCAL_RANK", "0")
+os.environ.setdefault("TRITON_CACHE_DIR", f"/tmp/triton_cache_rank{local_rank_env}")
 os.environ.setdefault("CUDA_VISIBLE_DEVICES", "1,2")
 os.environ.setdefault("EXPECTED_NUM_GPUS", "2")
 os.environ.setdefault("NCCL_P2P_DISABLE", "1")
@@ -130,7 +132,7 @@ trainer = SafeEvalTrainer(
     train_dataset=train_ds,
     eval_dataset=val_ds,
     data_collator=data_collator,
-    callbacks=[MemCleanupCallback()],
+    callbacks=[MemCleanupCallback(), ProgressCallback()],
 )
 
 train_result = trainer.train()
