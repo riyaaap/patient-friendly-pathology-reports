@@ -59,3 +59,33 @@ Open note: LR scaling heuristics used here are not LoRA/AdamW-specific and
 should be treated as an approximation. Revisit if Phase B/C training shows
 signs that this pairing was miscalibrated (e.g. unstable loss on the full run
 despite clean dry-run behavior on a tiny subset). 
+
+## Addendum: Memory scare root-cause correction (post-launch)
+
+Earlier entries in this log describe sustained ~95% GPU memory during
+accum=8/LR=4e-4 full-script quicktests, treated as a distinct and more
+serious signal than the previously-accepted brief oscillation pattern.
+Mitigations attempted at the time: PeriodicMemCleanupCallback (modest
+effect, 95%->93%), PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+(not yet tested at time of writing).
+
+ROOT CAUSE IDENTIFIED: the sustained high memory was NOT caused by the
+accum=8/LR=4e-4 config itself. All prior quicktest runs reused the same
+tmux session across multiple launches. A clean full-script dry-run in a
+brand-new tmux session, using the SAME config (accum=8, LR=4e-4, no
+expandable_segments, no extra cleanup tuning), showed stable ~77%
+memory throughout -- consistent with the previously-accepted pattern.
+
+Conclusion: reused tmux sessions were leaving orphaned CUDA context /
+allocator state behind, inflating apparent memory usage independent of
+the training loop. The cleanup callback's modest effect (95%->93%) is
+now understood as a red herring -- it was reclaiming a small amount of
+genuinely stale state, not indicating fragmentation in the actual job.
+
+Action item going forward: always launch training jobs (quicktest or
+real) in a fresh tmux session, never reuse one across multiple
+torchrun invocations.
+
+Final config for real Phase A run: accum=8, LR=4e-4, effective batch=64,
+no special memory-side mitigations required beyond fresh-session
+discipline.
