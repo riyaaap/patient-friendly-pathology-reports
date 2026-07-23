@@ -20,9 +20,15 @@ parser.add_argument("--adapter_path", default=None, help="optional LoRA adapter 
 parser.add_argument("--n_samples", type=int, default=20, help="number of val rows to eval on (small for quick test)")
 args = parser.parse_args()
 
-VAL_PATH = "data/processed/splits/val.csv"
+VAL_PATH = "data/processed/tcga_splits/val.csv"
 OUT_DIR = f"eval_results/{args.checkpoint_name}"
 os.makedirs(OUT_DIR, exist_ok=True)
+
+PROMPT_TEMPLATE = (
+    "### Pathology Report:" + chr(10) +
+    "{raw_report}" + chr(10) + chr(10) +
+    "### Patient-Friendly Explanation:" + chr(10)
+)
 
 tokenizer = AutoTokenizer.from_pretrained(args.model_path)
 model = AutoModelForCausalLM.from_pretrained(args.model_path, torch_dtype=torch.float16, device_map={"": 0})
@@ -53,10 +59,10 @@ val_df = pd.DataFrame(val_df)
 
 generations, references, sources = [], [], []
 for _, row in val_df.iterrows():
-    prompt = row["raw_report"]
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048).to(model.device)
+    prompt = PROMPT_TEMPLATE.format(raw_report=row["raw_report"])   # fixed: wrap in template
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=2048, add_special_tokens=False).to(model.device)
     with torch.no_grad():
-        out = model.generate(**inputs, max_new_tokens=512, do_sample=False)
+        out = model.generate(**inputs, max_new_tokens=512, do_sample=False, pad_token_id=tokenizer.eos_token_id)
     gen_text = tokenizer.decode(out[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
     generations.append(gen_text)
     references.append(row["silver_target"])
