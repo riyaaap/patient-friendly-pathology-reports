@@ -3,7 +3,8 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-CHECKPOINT_ORDER = ["checkpoint_0_base", "phase_a_sft", "phase_b_sft", "phase_c_dpo"]
+#CHECKPOINT_ORDER = ["checkpoint_0_base", "phase_a_sft", "phase_b_sft", "phase_c_dpo"]
+CHECKPOINT_ORDER = ["checkpoint_0_base", "phase_a_sft"]  # abstract-submission subset; restore full list later
 
 rows = []
 for ckpt in CHECKPOINT_ORDER:

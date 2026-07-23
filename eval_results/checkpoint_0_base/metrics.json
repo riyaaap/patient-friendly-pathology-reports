@@ -1,8 +1,15 @@
 {
   "checkpoint": "checkpoint_0_base",
   "n_samples": 20,
-  "rouge_l_mean": 0.07329504925429108,
-  "bertscore_f1_mean": 0.5804533362388611,
-  "flesch_kincaid_mean": 14.282243901613603,
-  "gunning_fog_mean": 17.3987112965757
+  "rouge_l_mean": 0.16451299447061937,
+  "bleu": 0.03237122396986487,
+  "bleu_precisions": [
+    0.2891522554117789,
+    0.07043277973087647,
+    0.027220804471989306,
+    0.012425386770617615
+  ],
+  "bertscore_f1_mean": 0.7902644276618958,
+  "flesch_kincaid_mean": 7.804450731109159,
+  "gunning_fog_mean": 10.734522056592462
 }
