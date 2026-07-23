@@ -1,0 +1,30 @@
+{
+  "phase": "phase_a_sft",
+  "timestamp": "2026-07-22T17:16:15.438817",
+  "base_model": "meta-llama/Llama-3.1-8B",
+  "adapter_config": {
+    "r": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj"
+    ],
+    "bias": "none"
+  },
+  "data_version": {
+    "train_path": "data/processed/tokenized/train",
+    "val_path": "data/processed/tokenized/val",
+    "train_rows": 8117,
+    "val_rows": 451
+  },
+  "num_gpus": 2,
+  "per_device_train_batch_size": 4,
+  "gradient_accumulation_steps": 8,
+  "effective_global_batch_size": 64,
+  "final_train_loss": 0.36837312153407503,
+  "final_eval_loss": 0.3267309367656708,
+  "adapter_path": "checkpoints/phase_a_sft/final_adapter"
+}
