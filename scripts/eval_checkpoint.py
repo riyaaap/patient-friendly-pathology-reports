@@ -7,6 +7,7 @@ import textstat
 from rouge_score import rouge_scorer
 from bert_score import score as bertscore
 import pandas as pd
+from evaluate import load as load_metric
 
 print("CUDA_VISIBLE_DEVICES =", os.environ.get("CUDA_VISIBLE_DEVICES"))
 print("torch sees", torch.cuda.device_count(), "device(s)")
@@ -70,6 +71,23 @@ with open(f"{OUT_DIR}/generations.jsonl", "w") as f:
 scorer = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
 rouge_l_scores = [scorer.score(r, g)["rougeL"].fmeasure for r, g in zip(references, generations)]
 
+bleu_metric = load_metric("bleu")
+def compute_bleu(predictions, references):
+    """
+    predictions: list[str], model-generated patient-friendly reports
+    references: list[str], teacher-label target ground truth
+    """
+    results = bleu_metric.compute(
+        predictions=predictions,
+        references=[[r] for r in references],  # BLEU expects list-of-lists for refs
+    )
+    return {
+        "bleu": results["bleu"],
+        "bleu_precisions": results["precisions"],
+    }
+
+bleu_results = compute_bleu(generations, references)
+
 _, _, bert_f1 = bertscore(generations, references, lang="en", verbose=False)
 
 fk_scores = [textstat.flesch_kincaid_grade(g) for g in generations]
@@ -79,6 +97,8 @@ metrics = {
     "checkpoint": args.checkpoint_name,
     "n_samples": len(generations),
     "rouge_l_mean": sum(rouge_l_scores) / len(rouge_l_scores),
+    "bleu": bleu_results["bleu"], # scalar for heatmap
+    "bleu_precisions": bleu_results["bleu_precisions"], # not for heatmap
     "bertscore_f1_mean": bert_f1.mean().item(),
     "flesch_kincaid_mean": sum(fk_scores) / len(fk_scores),
     "gunning_fog_mean": sum(gf_scores) / len(gf_scores),
