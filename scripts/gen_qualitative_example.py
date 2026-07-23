@@ -26,7 +26,10 @@ if tokenizer.pad_token is None:
     tokenizer.pad_token = tokenizer.eos_token
 
 val_split = pd.read_csv(f"{SPLITS_DIR}/val.csv")
-sample_filename = val_split.iloc[0]["patient_filename"]  # swap index to pick a different example
+
+sample_filename = "TCGA-A8-A07O.9ECA4450-A550-44DE-B2E5-FD1CFF02A9FE"  # instead of val_split.iloc[0]
+# has len 459 -- TCGA-A8-A07O.9ECA4450-A550-44DE-B2E5-FD1CFF02A9FE
+# sample_filename = val_split.iloc[0]["patient_filename"]  # swap index to pick a different example
 
 silver = {}
 with open(SILVER_LABELS_PATH) as f:
@@ -44,14 +47,14 @@ inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096
 
 output = model.generate(
     **inputs,
-    max_new_tokens=512,
+    max_new_tokens=1024, # bumped from 512 to avoid truncation
     do_sample=False,   # deterministic, matches eval's greedy setup
     pad_token_id=tokenizer.eos_token_id,
 )
 generated_text = tokenizer.decode(output[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
 
 print("PATIENT_FILENAME:", sample_filename)
-print("\n=== RAW REPORT (truncated to 500 chars) ===\n", raw_report[:500], "...")
+print("\n=== RAW REPORT (full) ===\n", raw_report)
 print("\n=== REFERENCE (silver target) ===\n", reference_target)
 print("\n=== MODEL GENERATED ===\n", generated_text)
 
