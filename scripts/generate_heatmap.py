@@ -90,7 +90,7 @@ fig, ax = plt.subplots(figsize=(9, 0.9 * len(df_display) + 2))
 sns.heatmap(
     df_norm, annot=df_display.round(3), fmt="", cmap="RdYlGn",
     vmin=0, vmax=1, linewidths=0.5, linecolor="white",
-    cbar_kws={"label": "Normalized score (0=worst, 1=best, per column)"},
+    cbar_kws={"label": "Normalized score"},
     ax=ax,
 )
 ax.set_title("Pipeline Stage Comparison — Automatic Metrics", fontsize=13, pad=12)
