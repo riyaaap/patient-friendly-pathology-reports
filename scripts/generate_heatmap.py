@@ -12,21 +12,32 @@ import json, glob
 import os
 import pandas as pd
 import seaborn as sns
+from pathlib import Path
 import matplotlib.pyplot as plt
 
 EVAL_RESULTS_DIR = "eval_results"
+output_dir = Path("eval_results")
+output_dir.mkdir(parents=True, exist_ok=True)
+
+base_stem = "checkpoint_comparison_heatmap"
+extension = ".png"
+
+filepath = output_dir / f"{base_stem}{extension}"
+counter = 1
+
+while filepath.exists():
+    filepath = output_dir / f"{base_stem}_{counter}{extension}"
+    counter += 1
 
 # Explicit row order — controls top-to-bottom order in the heatmap.
 CHECKPOINT_ORDER = [
-    "tcga_raw_source",     # raw pathology report scored directly vs reference (floor baseline)
-    "teacher_llm",          # Qwen2.5-14B fresh generation vs its own frozen silver_target (self-consistency ceiling)
+    "tcga_raw_source",     # raw pathology report scored vs teacher target reference (floor baseline)
     "checkpoint_0_base",    # Llama-3.1-8B, no fine-tuning
     "phase_a_sft",          # Llama-3.1-8B + Phase A LoRA
 ]
 
 DISPLAY_NAMES = {
     "tcga_raw_source": "TCGA Raw Report (ground truth)",
-    "teacher_llm": "Teacher LLM (Qwen2.5-14B, 'summary' ground truth)",
     "checkpoint_0_base": "Student Base (Llama-3.1-8B, no FT)",
     "phase_a_sft": "Student Phase A (LoRA SFT)",
 }
@@ -93,15 +104,19 @@ sns.heatmap(
     cbar_kws={"label": "Normalized score"},
     ax=ax,
 )
-ax.set_title("Pipeline Stage Comparison — Automatic Metrics", fontsize=13, pad=12)
-ax.set_xlabel("")
-ax.set_ylabel("")
+ax.set_title("Evaluation Metrics Across Training Phases", fontsize=13, pad=12)
+ax.set_xlabel("Metric")
+ax.set_ylabel("Checkpoint")
 
 # ---- Legend/footnote with sample sizes ----
 footnote_lines = [
-    "Legend: color = relative performance per metric across rows shown (green=better, red=worse); "
-    "annotated numbers = raw metric values. For Flesch-Kincaid / Gunning Fog, LOWER raw "
-    "values are better (simpler reading level) and are colored accordingly."
+    "Legend: color reflects relative performance per metric across checkpoints. "
+    "Annotated numbers are raw metric values. For Flesch-Kincaid / Gunning Fog, LOWER raw "
+    "values are better (indicate a simpler reading level) and are colored accordingly."
+    "Note: 'target' reference used is teacher-LLM-generated summary and might contain uncorrected hallucinations; "
+    "as a result this heatmap reflects patient-friendly style alignment, needs further cinical accuracy "
+    "verification in next stages of training, see planned Med-HALT / medical-consistency evaluation for "
+    "clinical reliability."
 ]
 for name in CHECKPOINT_ORDER:
     if name in sample_info:
@@ -112,5 +127,5 @@ for name in CHECKPOINT_ORDER:
 fig.text(0.01, -0.02, "\n".join(footnote_lines), ha="left", va="top", fontsize=7, wrap=True)
 
 plt.tight_layout()
-plt.savefig("eval_results/checkpoint_comparison_heatmap.png", dpi=300, bbox_inches="tight")
-print("Saved: eval_results/checkpoint_comparison_heatmap.png")
+plt.savefig(filepath, dpi=300, bbox_inches="tight")
+print(f"Saved: {filepath}")
