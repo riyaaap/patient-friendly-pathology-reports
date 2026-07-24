@@ -16,6 +16,14 @@ for ckpt in CHECKPOINT_ORDER:
 
 df = pd.DataFrame(rows).set_index("checkpoint")
 
+# after loading metrics.json into `df` (one row per checkpoint)
+#heatmap_cols = [
+#    "rouge_l_mean", "bleu", "bertscore_f1_mean",
+#    "flesch_kincaid_mean", "gunning_fog_mean",
+#]
+#df = df[heatmap_cols]
+df = df.select_dtypes(exclude=["object"])  # drops list/str columns automatically
+
 # normalize per-metric (min-max) since scales differ (loss vs. BERTScore vs. ROUGE)
 df_norm = (df - df.min()) / (df.max() - df.min())
 
